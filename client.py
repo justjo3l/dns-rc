@@ -15,10 +15,12 @@ print("IP Address: " + ip)
 print("Port: " + port)
 print("Name Server: " + name_server)
 
-udp_client_socket = socket(AF_INET, SOCK_DGRAM)
+udp_client_socket = socket(AF_INET, SOCK_STREAM)
+udp_client_socket.connect((ip, int(port)))
 
-udp_client_socket.sendto(str.encode(name_server), (ip, int(port)))
+udp_client_socket.send(str.encode(name_server))
 
-resolver_response = udp_client_socket.recvfrom(buffer_size)
+receive_data = udp_client_socket.recv(1024).decode()
+print("Received from server: ", receive_data)
 
-print("Resolver response: " + resolver_response[0])
+udp_client_socket.close()
