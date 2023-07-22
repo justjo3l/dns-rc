@@ -57,8 +57,9 @@ def main():
     for key, value in addresses.items():
         query_socket.sendto(query, (value, 53))
         response, _ = query_socket.recvfrom(512)
-        # print_decoded_response(response)
-        print(decode_packet(response))
+        print(f"{key}:")
+        packet = decode_packet(response)
+        print(getAddresses(packet))
     
     conn.send("Hi".encode())
 

@@ -16,6 +16,7 @@ def decode_name(reader):
     while (length := reader.read(1)[0]) != 0:
         if length & 0b1100_0000:
             parts.append(decode_compressed_name(length, reader))
+            break
         else:
             parts.append(reader.read(length))
     return b".".join(parts)
@@ -40,13 +41,10 @@ def decode_record(reader):
     data = reader.read(10)
     type_, class_, ttl, data_len = struct.unpack("!HHIH", data)
     data = reader.read(data_len)
-    print(DNSRecord(name, type_, class_, ttl, data))
     return DNSRecord(name, type_, class_, ttl, data)
 
 def print_decoded_response(response):
     reader = BytesIO(response)
-    print(decode_headers(reader))
-    print(decode_question(reader))
     print(decode_record(reader))
 
 def decode_packet(data):
@@ -54,10 +52,8 @@ def decode_packet(data):
     headers = decode_headers(reader)
     questions = [decode_question(reader) for _ in range(headers.num_questions)]
     answers = [decode_record(reader) for _ in range(headers.num_answers)]
-    # authorities = [decode_record(sreader) for _ in range(headers.num_authorities)]
-    # additionals = [decode_record(reader) for _ in range(headers.num_additionals)]
-    authorities = []
-    additionals = []
+    authorities = [decode_record(reader) for _ in range(headers.num_authorities)]
+    additionals = [decode_record(reader) for _ in range(headers.num_additionals)]
 
     return DNSPacket(headers, questions, answers, authorities, additionals)
 
