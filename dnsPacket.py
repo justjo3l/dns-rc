@@ -26,3 +26,11 @@ def getAddresses(packet):
             addresses.append(address)
 
     return addresses
+
+def getNames(packet):
+    names = []
+
+    for authority in packet.authorities:
+        names.append(authority.getName())
+
+    return names

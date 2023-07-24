@@ -7,6 +7,10 @@ from dnsRecord import *
 from dnsPacket import *
 from io import BytesIO
 
+
+TYPE_A = 1
+TYPE_NS = 2
+
 def decode_headers(reader):
     items = struct.unpack("!HHHHHH", reader.read(12))
     return DNSHeader(*items)
@@ -40,7 +44,12 @@ def decode_record(reader):
     name = decode_name(reader)
     data = reader.read(10)
     type_, class_, ttl, data_len = struct.unpack("!HHIH", data)
-    data = reader.read(data_len)
+    if type_ == TYPE_NS:
+        data = decode_name(reader)
+    elif type_ == TYPE_A:
+        data = ip_to_string(reader.read(data_len))
+    else:
+        data = reader.read(data_len)
     return DNSRecord(name, type_, class_, ttl, data)
 
 def print_decoded_response(response):

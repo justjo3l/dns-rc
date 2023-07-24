@@ -9,3 +9,6 @@ class DNSRecord:
     class_: int
     ttl: int
     data: bytes
+
+    def getName(self):
+        return self.name
