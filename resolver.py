@@ -5,6 +5,7 @@ from decoder import *
 
 TYPE_A = 1
 TYPE_NS = 2
+timeout_length = 5
 
 def parse_root_file(file_name):
     f = open(file_name, 'r+')
@@ -23,10 +24,15 @@ def parse_root_file(file_name):
 def send_query(address, name, record_type):
     query = build_query(name, record_type)
     temp_query_socket = socket(AF_INET, SOCK_DGRAM)
-    temp_query_socket.sendto(query, (address, 53))
-
-    data, _ = temp_query_socket.recvfrom(512)
-    return decode_packet(data)
+    temp_query_socket.settimeout(timeout_length)
+    try:
+        temp_query_socket.sendto(query, (address, 53))
+        data, _ = temp_query_socket.recvfrom(512)
+    except(temp_query_socket.timeout):
+        print(f"Address {address} did not respond")
+        return None
+    finally:
+        return decode_packet(data)
 
 def get_answer(packet):
     answers = []
@@ -53,6 +59,8 @@ def resolve(name, record_type, query_index):
     while True:
         print(f"Querying {name_server} for {name}")
         response = send_query(name_server, name, record_type)
+        if (response == None):
+            return [[], 0, 0, 2]
         if (response.getResponseCode() != 0):
             return [[], 0, 0, response.getResponseCode()]
         if ips := get_answer(response):
@@ -70,11 +78,13 @@ def main():
 
     if (len(sys.argv) < 2):
         print("Error: Invalid number of arguments")
-        print("Usage: python resolver.py <resolver_port>")
+        print("Usage: python resolver.py <resolver_port> [timeout=5]")
         sys.exit()
 
     ip = "127.0.0.1"
     port = sys.argv[1]
+    if (len(sys.argv) == 3):
+        timeout_length = sys.argv[2]
 
     udp_resolver_socket = socket(AF_INET, SOCK_STREAM)
     udp_resolver_socket.bind((ip, int(port)))
