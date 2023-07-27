@@ -47,20 +47,22 @@ def get_nameserver(packet):
         if x.type_ == TYPE_NS:
             return x.data.decode("utf-8")
 
-def resolve(name, record_type):
+def resolve(name, record_type, query_index):
     addresses = parse_root_file('named.root')
-    name_server = list(addresses.values())[0]
+    name_server = list(addresses.values())[query_index]
     while True:
         print(f"Querying {name_server} for {name}")
         response = send_query(name_server, name, record_type)
+        if (response.getResponseCode() != 0):
+            return [[], 0, 0, response.getResponseCode()]
         if ips := get_answer(response):
             is_truncated = response.getTruncated()
             is_authoritative = response.getAuthoritative()
-            return [ips, is_truncated, is_authoritative]
+            return [ips, is_truncated, is_authoritative, 0]
         elif nsIP := get_nameserver_ip(response):
             name_server = nsIP
         elif ns_domain := get_nameserver(response):
-            name_server = resolve(ns_domain, TYPE_A)[0][0]
+            name_server = resolve(ns_domain, TYPE_A, query_index)[0][0]
         else:
             raise Exception("SOMETHING WENT WRONG")
 
@@ -89,15 +91,32 @@ def main():
 
     address = receive_data
     
-    resolve_results = resolve(address, TYPE_A)
+    server_failure = 1
+    query_index = 0
 
-    output = "IPs: "
+    while server_failure == 1 and query_index < 13:
+        resolve_results = resolve(address, TYPE_A, query_index)
+        if (resolve_results[3] != 2):
+            server_failure = 0
+        query_index += 1
 
-    for ip in resolve_results[0]:
-        output += f"{ip}\n"
+    if (resolve_results[3] != 0):
+        if (resolve_results[3] == 1):
+            output = "Error: incorrect query format"
+        elif (server_failure == 1):
+            output = "Error: server failed to complete the request"
+        elif (resolve_results[3] == 3):
+            output = "Error: domain name does not exist"
+        else:
+            output = f"Error: {resolve_results[3]}"
+    else:
+        output = "IPs: "
 
-    output += f"Truncated: {resolve_results[1]}\n"
-    output += f"Authoritative: {resolve_results[2]}"
+        for ip in resolve_results[0]:
+            output += f"{ip}\n"
+
+        output += f"Truncated: {resolve_results[1]}\n"
+        output += f"Authoritative: {resolve_results[2]}"
     
     conn.send(output.encode())
 

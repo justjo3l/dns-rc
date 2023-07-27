@@ -21,6 +21,9 @@ class DNSPacket:
 
     def getAuthoritative(self):
         return self.header.getAuthoritative()
+    
+    def getResponseCode(self):
+        return self.header.getResponseCode()
 
 def getAddresses(packet):
     addresses = []

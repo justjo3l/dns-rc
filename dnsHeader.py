@@ -16,3 +16,7 @@ class DNSHeader:
     def getAuthoritative(self):
         is_authoritative = bool(self.flags & 0b00010000)
         return is_authoritative
+    
+    def getResponseCode(self):
+        response_code = self.flags & 0b00001111
+        return response_code
