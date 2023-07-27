@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import dataclasses
 from typing import List
 from dnsHeader import *
 from dnsQuestion import *
@@ -16,6 +15,12 @@ class DNSPacket:
     answers: List[DNSRecord]
     authorities: List[DNSRecord]
     additionals: List[DNSRecord]
+
+    def getTruncated(self):
+        return self.header.getTruncated()
+
+    def getAuthoritative(self):
+        return self.header.getAuthoritative()
 
 def getAddresses(packet):
     addresses = []

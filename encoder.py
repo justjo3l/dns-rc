@@ -14,9 +14,3 @@ def encode_dns_name(name):
     for segment in name.encode("ascii").split(b"."):
         encoded += bytes([len(segment)]) + segment
     return encoded + b"\x00"
-
-# def main():
-#     print(encode_dns_name("google.com"))
-
-# if __name__ == "__main__":
-#     main()

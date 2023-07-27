@@ -18,12 +18,7 @@ def parse_root_file(file_name):
             elements = line.split()
             addresses[elements[0].strip()] = elements[3].strip()
 
-    return addresses
-
-def print_parsed(addresses):
-    for key, value in addresses.items():
-        print(key + " - " + value)
-        
+    return addresses    
 
 def send_query(address, name, record_type):
     query = build_query(name, record_type)
@@ -34,9 +29,13 @@ def send_query(address, name, record_type):
     return decode_packet(data)
 
 def get_answer(packet):
+    answers = []
+
     for x in packet.answers:
         if x.type_ == TYPE_A:
-            return x.data
+            answers.append(x.data)
+
+    return answers
 
 def get_nameserver_ip(packet):
     for x in packet.additionals:
@@ -50,17 +49,18 @@ def get_nameserver(packet):
 
 def resolve(name, record_type):
     addresses = parse_root_file('named.root')
-    # print_parsed(addresses)
     name_server = list(addresses.values())[0]
     while True:
         print(f"Querying {name_server} for {name}")
         response = send_query(name_server, name, record_type)
-        if ip := get_answer(response):
-            return ip
+        if ips := get_answer(response):
+            is_truncated = response.getTruncated()
+            is_authoritative = response.getAuthoritative()
+            return [ips, is_truncated, is_authoritative]
         elif nsIP := get_nameserver_ip(response):
             name_server = nsIP
         elif ns_domain := get_nameserver(response):
-            name_server = resolve(ns_domain, TYPE_A)
+            name_server = resolve(ns_domain, TYPE_A)[0][0]
         else:
             raise Exception("SOMETHING WENT WRONG")
 
@@ -87,13 +87,19 @@ def main():
 
     print("Received from client: ", receive_data)
 
-    query_socket = socket(AF_INET, SOCK_DGRAM)
     address = receive_data
-    print("Client address: " + str(address))
     
-    found_ip = resolve(address, TYPE_A)
+    resolve_results = resolve(address, TYPE_A)
+
+    output = "IPs: "
+
+    for ip in resolve_results[0]:
+        output += f"{ip}\n"
+
+    output += f"Truncated: {resolve_results[1]}\n"
+    output += f"Authoritative: {resolve_results[2]}"
     
-    conn.send(found_ip.encode())
+    conn.send(output.encode())
 
     conn.close()
     udp_resolver_socket.close()

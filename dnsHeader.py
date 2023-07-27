@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-import dataclasses
-import struct
 
 @dataclass
 class DNSHeader:
@@ -10,3 +8,11 @@ class DNSHeader:
     num_answers: int = 0
     num_authorities: int = 0
     num_additionals: int = 0
+
+    def getTruncated(self):
+        is_truncated = bool(self.flags & 0b00100000)
+        return is_truncated
+    
+    def getAuthoritative(self):
+        is_authoritative = bool(self.flags & 0b00010000)
+        return is_authoritative
